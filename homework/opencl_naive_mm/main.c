@@ -17,14 +17,14 @@
 
 #define MAX_WORK_GROUP_SIZE 1024
 
-void get_efficient_local_work_size(int rows, int cols, size_t* local_work_size[2]) {
+void get_efficient_local_work_size(int rows, int cols, size_t local_work_size[2]) {
     int max_size = (int)sqrt((float)MAX_WORK_GROUP_SIZE);
     
     // Try to make the work group as square as possible
     for (int size = max_size; size > 0; size--) {
         if (rows % size == 0 && cols % size == 0) {
-            local_work_size[0] = size;
-            local_work_size[1] = size;
+            local_work_size[0] = (size_t)size;
+            local_work_size[1] = (size_t)size;
             return;
         }
     }
@@ -33,8 +33,8 @@ void get_efficient_local_work_size(int rows, int cols, size_t* local_work_size[2
     for (int x = max_size; x > 0; x--) {
         for (int y = MAX_WORK_GROUP_SIZE / x; y > 0; y--) {
             if (x * y <= MAX_WORK_GROUP_SIZE && rows % x == 0 && cols % y == 0) {
-                local_work_size[0] = x;
-                local_work_size[1] = y;
+                local_work_size[0] = (size_t)x;
+                local_work_size[1] = (size_t)y;
                 return;
             }
         }
