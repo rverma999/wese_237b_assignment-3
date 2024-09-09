@@ -17,7 +17,7 @@
 
 #define MAX_WORK_GROUP_SIZE 1024
 
-void get_efficient_local_work_size(int rows, int cols, size_t* local_work_size) {
+void get_efficient_local_work_size(int rows, int cols, size_t* local_work_size[2]) {
     int max_size = (int)sqrt((float)MAX_WORK_GROUP_SIZE);
     
     // Try to make the work group as square as possible
@@ -138,10 +138,10 @@ void OpenCLMatrixMultiply(Matrix *input0, Matrix *input1, Matrix *result)
     fprintf(stderr, "input0->shape[0]=%0d , input1->shape[1]=%0d\n", input0->shape[0], input1->shape[1]);
     size_t global_item_size[2] = {input0->shape[0], input1->shape[1]};
     get_efficient_local_work_size(input0->shape[0] , input0->shape[1],&local_work_size);
-    fprintf(stderr, "Usage: %s local_work_size[0] = %d  , [1]=%0d\n", local_work_size[0],local_work_size[1] );
+    fprintf(stderr, "local_work_size[0] = %zu  , [1]=%zu\n", local_work_size[0],local_work_size[1] );
     //size_t local_item_size[2] = {1,1};
     //@@ Launch the GPU Kernel here
-    err = clEnqueueNDRangeKernel(queue, kernel, 1, NULL, &global_item_size, &local_work_size, 0, NULL, NULL);
+    err = clEnqueueNDRangeKernel(queue, kernel, 1, NULL, global_item_size, local_work_size, 0, NULL, NULL);
     CHECK_ERR(err, "clEnqueueNDRangeKernel");
 
     //@@ Copy the GPU memory back to the CPU here
