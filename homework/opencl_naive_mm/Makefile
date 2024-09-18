@@ -21,7 +21,7 @@ solution: ../../helper_lib/helper_lib.a main.c
 	cd ../../helper_lib; make
 
 run: solution
-	./solution Dataset/0/input0.raw Dataset/0/input1.raw Dataset/0/output.raw output.raw
+	POCL_DEBUG=err,warn ./solution Dataset/0/input0.raw Dataset/0/input1.raw Dataset/0/output.raw output.raw
 	./solution Dataset/1/input0.raw Dataset/1/input1.raw Dataset/1/output.raw output.raw
 	./solution Dataset/2/input0.raw Dataset/2/input1.raw Dataset/2/output.raw output.raw
 	./solution Dataset/3/input0.raw Dataset/3/input1.raw Dataset/3/output.raw output.raw
