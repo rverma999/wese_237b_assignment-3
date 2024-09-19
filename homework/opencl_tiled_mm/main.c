@@ -13,6 +13,41 @@
     }
 
 #define KERNEL_PATH "kernel.cl"
+#define MAX_WORK_GROUP_SIZE 1024
+
+void get_efficient_local_work_size(int rows, int cols, size_t local_work_size[2]) {
+  
+    int max_size = (int)sqrt((float)MAX_WORK_GROUP_SIZE);
+    fprintf(stderr, "get_efficient_local_work_size max_size=%0d\n", max_size);
+     
+
+    // Try to make the work group as square as possible
+    for (int size = max_size; size > 0; size--) {
+        if (rows % size == 0 && cols % size == 0) {
+            local_work_size[0] = (size_t)size;
+            local_work_size[1] = (size_t)size;
+            return;
+        }
+    }
+    
+    // If no square size is found, try rectangular shapes
+    for (int x = max_size; x > 0; x--) {
+        for (int y = MAX_WORK_GROUP_SIZE / x; y > 0; y--) {
+            if (x * y <= MAX_WORK_GROUP_SIZE && rows % x == 0 && cols % y == 0) {
+                local_work_size[0] = (size_t)x;
+                local_work_size[1] = (size_t)y;
+                return;
+            }
+        }
+    }
+    
+    //If no other condition matched
+    local_work_size[0] = 1;
+    local_work_size[1] = 1;
+
+
+}
+
 
 void OpenCLMatrixMultiply(Matrix *input0, Matrix *input1, Matrix *result)
 {
@@ -61,8 +96,18 @@ void OpenCLMatrixMultiply(Matrix *input0, Matrix *input1, Matrix *result)
     CHECK_ERR(err, "clCreateKernel");
 
     //@@ Allocate GPU memory here
+    device_a = clCreateBuffer(context, CL_MEM_READ_ONLY, sizeof(float) * input0->shape[0] * input0->shape[1],NULL, &err);
+    CHECK_ERR(err, "clCreateBuffer");
+    device_b = clCreateBuffer(context, CL_MEM_READ_ONLY, sizeof(float) * input1->shape[0] * input1->shape[1],NULL, &err);
+    CHECK_ERR(err, "clCreateBuffer");
+    device_c = clCreateBuffer(context, CL_MEM_WRITE_ONLY, sizeof(float) * result->shape[0] * result->shape[1],NULL, &err);
+    CHECK_ERR(err, "clCreateBuffer");
 
     //@@ Copy memory to the GPU here
+    err = clEnqueueWriteBuffer(queue, device_a, CL_TRUE, 0, sizeof(float) * input0->shape[0] * input0->shape[1], input0->data,0,NULL,NULL);
+    CHECK_ERR(err,"clEnqueueWriteBuffer");
+    err = clEnqueueWriteBuffer(queue, device_b, CL_TRUE, 0, sizeof(float) * input1->shape[0] * input1->shape[1], input1->data,0,NULL,NULL);
+    CHECK_ERR(err,"clEnqueueWriteBuffer");
 
     // Set the arguments to our compute kernel
     // __global const float *A, __global const float *B, __global float *C,
@@ -88,13 +133,28 @@ void OpenCLMatrixMultiply(Matrix *input0, Matrix *input1, Matrix *result)
     err |= clSetKernelArg(kernel, 8, sizeof(unsigned int), &result->shape[1]);
     CHECK_ERR(err, "clSetKernelArg 8");
 
-    // @@ define local and global work sizes
-
+  // @@ define local and global work sizes
+    fprintf(stderr, "input0->shape[0]=%0d , input1->shape[1]=%0d\n", input0->shape[0], input1->shape[1]);
+    size_t global_item_size[2] = {input0->shape[0], input1->shape[1]};
+    get_efficient_local_work_size(input0->shape[0] , input0->shape[1],local_work_size);
+    fprintf(stderr, "local_work_size[0] = %zu  , [1]=%zu\n", local_work_size[0],local_work_size[1] );
+    //size_t local_item_size[2] = {1,1};
     //@@ Launch the GPU Kernel here
+     printf("Launch Kernel\n");
+    err = clEnqueueNDRangeKernel(queue, kernel, 2, NULL, global_item_size, local_work_size, 0, NULL, NULL);
+    CHECK_ERR(err, "clEnqueueNDRangeKernel");
 
     //@@ Copy the GPU memory back to the CPU here
-
+    clEnqueueReadBuffer(queue, device_c, CL_TRUE, 0, sizeof(float) * result->shape[0] * result->shape[1], result->data, 0, NULL, NULL);
+    CHECK_ERR(err, "clEnqueueReadBuffer device_c");
     //@@ Free the GPU memory here
+    clReleaseMemObject(device_a);
+    clReleaseMemObject(device_b);
+    clReleaseMemObject(device_c);
+    clReleaseProgram(program);
+    clReleaseKernel(kernel);
+    clReleaseCommandQueue(queue);
+    clReleaseContext(context);
 }
 
 int main(int argc, char *argv[])
