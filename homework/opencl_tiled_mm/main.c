@@ -16,6 +16,8 @@
 #define KERNEL_PATH "kernel.cl"
 #define MAX_WORK_GROUP_SIZE 1024
 
+size_t local_work_size_stored[2];
+
 void get_efficient_local_work_size(int rows, int cols, size_t local_work_size[2]) {
   
     int max_size = (int)sqrt((float)MAX_WORK_GROUP_SIZE);
@@ -46,8 +48,10 @@ void get_efficient_local_work_size(int rows, int cols, size_t local_work_size[2]
     local_work_size[0] = 1;
     local_work_size[1] = 1;
 
-
+    local_work_size_stored[0] = local_work_size[0] ;
+    local_work_size_stored[1] = local_work_size[1] ;
 }
+
 
 
 void OpenCLMatrixMultiply(Matrix *input0, Matrix *input1, Matrix *result)
@@ -135,6 +139,10 @@ void OpenCLMatrixMultiply(Matrix *input0, Matrix *input1, Matrix *result)
     err |= clSetKernelArg(kernel, 7, sizeof(unsigned int), &result->shape[0]);
     CHECK_ERR(err, "clSetKernelArg 7");
     err |= clSetKernelArg(kernel, 8, sizeof(unsigned int), &result->shape[1]);
+    CHECK_ERR(err, "clSetKernelArg 8");
+   
+    //TSIZE
+    err |= clSetKernelArg(kernel, 9, sizeof(unsigned int), local_work_size_stored);
     CHECK_ERR(err, "clSetKernelArg 8");
 
   // @@ define local and global work sizes
