@@ -36,13 +36,15 @@ __kernel void matrixMultiply(
             Bsub[localRow][localCol] = 0.0f;
         }
         
+        //Synchronize all locals 
         barrier(CLK_LOCAL_MEM_FENCE);
 
         // Perform computation for this tile
         for (int k = 0; k < TSIZE; k++) {
             sum += Asub[localRow][k] * Bsub[k][localCol];
+            //sum = native_fma(Asub[localRow][k], Bsub[k][localCol], sum);
         }
-        
+        //Synchronize all locals 
         barrier(CLK_LOCAL_MEM_FENCE);
     }
 
