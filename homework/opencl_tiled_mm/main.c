@@ -4,6 +4,7 @@
 #include "device.h"
 #include "kernel.h"
 #include "matrix.h"
+#include "math.h"
 
 #define CHECK_ERR(err, msg)                           \
     if (err != CL_SUCCESS)                            \
@@ -68,6 +69,9 @@ void OpenCLMatrixMultiply(Matrix *input0, Matrix *input1, Matrix *result)
     // Find platforms and devices
     OclPlatformProp *platforms = NULL;
     cl_uint num_platforms;
+
+    size_t local_work_size[2];
+
 
     err = OclFindPlatforms((const OclPlatformProp **)&platforms, &num_platforms);
     CHECK_ERR(err, "OclFindPlatforms");
@@ -141,7 +145,9 @@ void OpenCLMatrixMultiply(Matrix *input0, Matrix *input1, Matrix *result)
     //size_t local_item_size[2] = {1,1};
     //@@ Launch the GPU Kernel here
      printf("Launch Kernel\n");
-    err = clEnqueueNDRangeKernel(queue, kernel, 2, NULL, global_item_size, local_work_size, 0, NULL, NULL);
+    //err = clEnqueueNDRangeKernel(queue, kernel, 2, NULL, global_item_size, local_work_size, 0, NULL, NULL);
+    //In following code when local_work_size is NULL, let OpenCL choose the work items in work group
+    err = clEnqueueNDRangeKernel(queue, kernel, 2, NULL, global_item_size, NULL, 0, NULL, NULL);
     CHECK_ERR(err, "clEnqueueNDRangeKernel");
 
     //@@ Copy the GPU memory back to the CPU here
@@ -187,6 +193,8 @@ int main(int argc, char *argv[])
     int rows, cols;
     //@@ Update these values for the output rows and cols of the output
     //@@ Do not use the results from the answer matrix
+    rows = host_a.shape[0];
+    cols = host_b.shape[1];
 
     // Allocate the memory for the target.
     host_c.shape[0] = rows;
