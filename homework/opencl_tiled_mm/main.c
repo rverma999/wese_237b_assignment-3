@@ -112,7 +112,7 @@ void OpenCLMatrixMultiply(Matrix *input0, Matrix *input1, Matrix *result)
     CHECK_ERR(err, "clCreateBuffer");
 
     //@@ Copy memory to the GPU here
-    err = clEnqueueWriteBuffer(queue, device_a, CL_TRUE, 0, sizeof(float) * input0->shape[0] * input0->shape[1], input0->data,0,NULL,NULL);
+    err = clEnqueueWriteBuffer(queue, device_a, CL_TRUE, 0, sizeof(float) * input0->shape[0] * input0->shape[1] , input0->data,0,NULL,NULL);
     CHECK_ERR(err,"clEnqueueWriteBuffer");
     err = clEnqueueWriteBuffer(queue, device_b, CL_TRUE, 0, sizeof(float) * input1->shape[0] * input1->shape[1], input1->data,0,NULL,NULL);
     CHECK_ERR(err,"clEnqueueWriteBuffer");
@@ -147,8 +147,25 @@ void OpenCLMatrixMultiply(Matrix *input0, Matrix *input1, Matrix *result)
 
   // @@ define local and global work sizes
     fprintf(stderr, "input0->shape[0]=%0d , input1->shape[1]=%0d\n", input0->shape[0], input1->shape[1]);
-    size_t global_item_size[2] = {result->shape[1], result->shape[0]};
+
+
     get_efficient_local_work_size(input0->shape[0] , input0->shape[1],local_work_size);
+    size_t local_item_size[2] = {16, 16};
+    //while (local_item_size[0] * local_item_size[1] > max_work_group_size) {
+    while (local_item_size[0] * local_item_size[1] > 1024) {     
+    if (local_item_size[0] > local_item_size[1]) {
+        local_item_size[0] /= 2;
+    } else {
+        local_item_size[1] /= 2;
+    }
+}
+
+    //size_t global_item_size[2] = {result->shape[1], result->shape[0]};
+    size_t global_item_size[2] = {
+    ((result->shape[1] + local_item_size[0] - 1) / local_item_size[0]) * local_item_size[0],
+    ((result->shape[0] + local_item_size[1] - 1) / local_item_size[1]) * local_item_size[1]
+    };
+
     fprintf(stderr, "local_work_size[0] = %zu  , [1]=%zu\n", local_work_size[0],local_work_size[1] );
     //size_t local_item_size[2] = {1,1};
     //@@ Launch the GPU Kernel here
