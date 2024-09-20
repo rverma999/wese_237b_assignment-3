@@ -160,17 +160,20 @@ void OpenCLMatrixMultiply(Matrix *input0, Matrix *input1, Matrix *result)
     }
 }
 
+    //err |= clSetKernelArg(kernel, 9, sizeof(unsigned int), &result->shape[1]);
+    //CHECK_ERR(err, "clSetKernelArg 8");
+
     //size_t global_item_size[2] = {result->shape[1], result->shape[0]};
     size_t global_item_size[2] = {
     ((result->shape[1] + local_item_size[0] - 1) / local_item_size[0]) * local_item_size[0],
     ((result->shape[0] + local_item_size[1] - 1) / local_item_size[1]) * local_item_size[1]
     };
 
-    fprintf(stderr, "local_work_size[0] = %zu  , [1]=%zu\n", local_work_size[0],local_work_size[1] );
+    fprintf(stderr, "local_item_size[0] = %zu  , [1]=%zu\n", local_item_size[0],local_item_size[1] );
     //size_t local_item_size[2] = {1,1};
     //@@ Launch the GPU Kernel here
      printf("Launch Kernel\n");
-    err = clEnqueueNDRangeKernel(queue, kernel, 2, NULL, global_item_size, local_work_size, 0, NULL, NULL);
+    err = clEnqueueNDRangeKernel(queue, kernel, 2, NULL, global_item_size, local_item_size, 0, NULL, NULL);
     //In following code when local_work_size is NULL, let OpenCL choose the work items in work group
     //err = clEnqueueNDRangeKernel(queue, kernel, 2, NULL, global_item_size, NULL, 0, NULL, NULL);
     CHECK_ERR(err, "clEnqueueNDRangeKernel");

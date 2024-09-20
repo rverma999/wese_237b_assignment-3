@@ -1,11 +1,11 @@
-//#define TSIZE 16
+#define TSIZE 16
 
 __kernel void matrixMultiply(
     __global const float *A, __global const float *B, __global float *C,
     const unsigned int numARows, const unsigned int numAColumns,
     const unsigned int numBRows, const unsigned int numBColumns,
-    const unsigned int numCRows, const unsigned int numCColumns,
-    const unsigned int TSIZE
+    const unsigned int numCRows, const unsigned int numCColumns
+    //const unsigned int TSIZE
     ) {
     
     const int row = get_global_id(1);
